@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Jukebox Suno</title>
+    <style>
+        :root {
+            --color-bg: #0a0e1a;
+            --color-surface: #1a1f35;
+            --color-primary: #00d9ff;
+            --color-secondary: #ff006e;
+            --color-text: #ffffff;
+            --color-text-muted: #a0a0b0;
+            --color-accent: #ffd700;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--color-bg) 0%, #1a0f2e 100%);
+            color: var(--color-text);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px 0;
+        }
+
+        h1 {
+            font-size: 3rem;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { filter: drop-shadow(0 0 10px rgba(0, 217, 255, 0.3)); }
+            to { filter: drop-shadow(0 0 20px rgba(255, 0, 110, 0.5)); }
+        }
+
+        .subtitle {
+            color: var(--color-text-muted);
+            font-size: 1.2rem;
+        }
+
+        .filters {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        .filter-btn {
+            padding: 10px 25px;
+            background: var(--color-surface);
+            border: 2px solid transparent;
+            border-radius: 25px;
+            color: var(--color-text);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--color-primary);
+            transform: translateY(-2px);
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+            border-color: var(--color-primary);
+        }
+
+        .songs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .song-card {
+            background: var(--color-surface);
+            border-radius: 15px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .song-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 0;
+        }
+
+        .song-card:hover::before {
+            opacity: 0.1;
+        }
+
+        .song-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--color-primary);
+        }
+
+        .song-card.active {
+            border-color: var(--color-accent);
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+        }
+
+        .song-card > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .song-cover {
+            width: 100%;
+            height: 240px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .song-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--color-text);
+        }
+
+        .song-genre {
+            display: inline-block;
+            padding: 5px 12px;
+            background: rgba(0, 217, 255, 0.2);
+            border-radius: 15px;
+            font-size: 0.85rem;
+            color: var(--color-primary);
+            margin-bottom: 10px;
+        }
+
+        .song-year {
+            color: var(--color-text-muted);
+            font-size: 0.9rem;
+        }
+
+        .player-section {
+            background: var(--color-surface);
+            border-radius: 20px;
+            padding: 30px;
+            margin-top: 30px;
+            border: 2px solid var(--color-primary);
+            box-shadow: 0 10px 40px rgba(0, 217, 255, 0.2);
+        }
+
+        .player-content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 40px;
+            align-items: start;
+        }
+
+        @media (max-width: 768px) {
+            .player-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .current-cover {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .player-info {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .current-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--color-text);
+        }
+
+        .current-genre {
+            display: inline-block;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+            border-radius: 20px;
+            font-size: 1rem;
+            width: fit-content;
+        }
+
+        .lyrics-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+
+        .lyrics-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .lyrics-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .lyrics-container::-webkit-scrollbar-thumb {
+            background: var(--color-primary);
+            border-radius: 10px;
+        }
+
+        .lyrics {
+            line-height: 1.8;
+            white-space: pre-wrap;
+            color: var(--color-text-muted);
+            font-size: 1rem;
+        }
+
+        .audio-player {
+            margin-top: 25px;
+            width: 100%;
+        }
+
+        audio {
+            width: 100%;
+            border-radius: 10px;
+            outline: none;
+        }
+
+        audio::-webkit-media-controls-panel {
+            background: var(--color-surface);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        .control-btn {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+            border: none;
+            border-radius: 25px;
+            color: var(--color-text);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(0, 217, 255, 0.4);
+        }
+
+        .control-btn:active {
+            transform: scale(0.98);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .instructions {
+            background: rgba(255, 215, 0, 0.1);
+            border: 2px solid var(--color-accent);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 30px 0;
+        }
+
+        .instructions h3 {
+            color: var(--color-accent);
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+
+        .instructions code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: var(--color-primary);
+        }
+
+        /* Login Screen */
+        .login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--color-bg) 0%, #1a0f2e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .login-box {
+            background: var(--color-surface);
+            padding: 40px;
+            border-radius: 20px;
+            border: 2px solid var(--color-primary);
+            box-shadow: 0 10px 40px rgba(0, 217, 255, 0.3);
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .login-box h2 {
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid var(--color-primary);
+            border-radius: 10px;
+            color: var(--color-text);
+            font-size: 1rem;
+            margin-bottom: 20px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .login-input:focus {
+            border-color: var(--color-secondary);
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+            border: none;
+            border-radius: 10px;
+            color: var(--color-text);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 217, 255, 0.5);
+        }
+
+        .error-message {
+            color: var(--color-secondary);
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+
+        .protected-content {
+            display: none;
+        }
+
+        .protected-content.unlocked {
+            display: block;
+        }
+
+        /* Anti-download protection */
+        audio::-webkit-media-controls-download-button {
+            display: none;
+        }
+
+        audio::-webkit-media-controls-enclosure {
+            overflow: hidden;
+        }
+
+        img {
+            pointer-events: none;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- 🔒 PANTALLA DE LOGIN -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-box">
+            <h2>🎵 Acceso Privado</h2>
+            <p style="color: var(--color-text-muted); margin-bottom: 20px;">
+                Esta jukebox es privada. Introduce la contraseña para acceder.
+            </p>
+            <input 
+                type="password" 
+                class="login-input" 
+                id="passwordInput" 
+                placeholder="Contraseña"
+                autocomplete="off"
+            >
+            <button class="login-btn" onclick="checkPassword()">Acceder</button>
+            <p class="error-message" id="errorMessage"></p>
+        </div>
+    </div>
+
+    <!-- 🎵 CONTENIDO PROTEGIDO -->
+    <div class="container protected-content" id="protectedContent">
+        <header>
+            <h1>🎵 Mi Jukebox Suno</h1>
+            <p class="subtitle">Colección Personal de Música AI</p>
+        </header>
+
+        <div class="instructions">
+            <h3>⚠️ Importante: Cómo hacer funcionar el audio</h3>
+            <ol>
+                <li><strong>Descarga tus canciones de Suno:</strong>
+                    <ul style="margin: 10px 0; padding-left: 20px;">
+                        <li>Ve a cada URL de tus canciones en Suno</li>
+                        <li>Haz clic en el botón de menú (tres puntos) → "Download"</li>
+                        <li>Guarda los archivos MP3 en la misma carpeta que este HTML</li>
+                    </ul>
+                </li>
+                <li><strong>Actualiza las rutas de audio:</strong> En el código, busca <code>const songs = [...]</code> y cambia <code>audio: "https://cdn1..."</code> por <code>audio: "nombre-cancion.mp3"</code></li>
+                <li><strong>Copia los datos de Suno:</strong> Título, género (tags) y letras desde cada página</li>
+                <li><strong>Opcional:</strong> Descarga también las imágenes de portada y actualiza las URLs de <code>cover</code></li>
+            </ol>
+            <p style="margin-top: 15px; color: var(--color-accent); font-weight: 600;">
+                💡 Tus enlaces: 
+                <a href="https://suno.com/s/0ztsUgsaWiUVqfJt" target="_blank" style="color: var(--color-primary);">Canción 1</a> • 
+                <a href="https://suno.com/s/kt8ExlSkdh6W25tY" target="_blank" style="color: var(--color-primary);">Canción 2</a> • 
+                <a href="https://suno.com/s/btvytMpd5bECFJvJ" target="_blank" style="color: var(--color-primary);">Canción 3</a> • 
+                <a href="https://suno.com/s/eNoFCm46r207jZxF" target="_blank" style="color: var(--color-primary);">Canción 4</a>
+            </p>
+        </div>
+
+        <div class="filters">
+            <button class="filter-btn active" data-genre="all">Todas</button>
+            <!-- ⚠️ Actualiza estos botones con los géneros reales de tus canciones -->
+            <button class="filter-btn" data-genre="Género 1">Género 1</button>
+            <button class="filter-btn" data-genre="Género 2">Género 2</button>
+            <button class="filter-btn" data-genre="Género 3">Género 3</button>
+            <button class="filter-btn" data-genre="Género 4">Género 4</button>
+        </div>
+
+        <div class="songs-grid" id="songsGrid"></div>
+
+        <div class="player-section hidden" id="playerSection">
+            <div class="player-content">
+                <img src="" alt="Cover" class="current-cover" id="currentCover">
+                <div class="player-info">
+                    <div>
+                        <h2 class="current-title" id="currentTitle">Selecciona una canción</h2>
+                        <span class="current-genre" id="currentGenre"></span>
+                        <p class="song-year" id="currentYear"></p>
+                    </div>
+                    <div class="lyrics-container">
+                        <div class="lyrics" id="currentLyrics"></div>
+                    </div>
+                    <div class="audio-player">
+                        <audio id="audioPlayer" controls>
+                            <source src="" type="audio/mpeg">
+                            Tu navegador no soporta el elemento de audio.
+                        </audio>
+                    </div>
+                    <div class="controls">
+                        <button class="control-btn" id="prevBtn">⏮ Anterior</button>
+                        <button class="control-btn" id="nextBtn">Siguiente ⏭</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 🔒 CONFIGURACIÓN DE SEGURIDAD
+        // ⚠️ CAMBIA ESTA CONTRASEÑA por la tuya
+        const ACCESS_PASSWORD = "mimusica2026"; // 👈 Cambia esto
+
+        // 🔒 Sistema de Login
+        function checkPassword() {
+            const input = document.getElementById('passwordInput');
+            const errorMsg = document.getElementById('errorMessage');
+            
+            if (input.value === ACCESS_PASSWORD) {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('protectedContent').classList.add('unlocked');
+                sessionStorage.setItem('jukebox_access', 'granted');
+                errorMsg.textContent = '';
+            } else {
+                errorMsg.textContent = '❌ Contraseña incorrecta';
+                input.value = '';
+                input.focus();
+            }
+        }
+
+        // Enter key en el input
+        document.addEventListener('DOMContentLoaded', () => {
+            const passwordInput = document.getElementById('passwordInput');
+            if (passwordInput) {
+                passwordInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') checkPassword();
+                });
+                passwordInput.focus();
+            }
+
+            // Verificar si ya tiene acceso en esta sesión
+            if (sessionStorage.getItem('jukebox_access') === 'granted') {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('protectedContent').classList.add('unlocked');
+            }
+        });
+
+        // 🔒 Protección anti-descarga
+        document.addEventListener('contextmenu', (e) => {
+            if (e.target.tagName === 'AUDIO' || e.target.tagName === 'IMG') {
+                e.preventDefault();
+            }
+        });
+
+        // Prevenir drag & drop de imágenes
+        document.addEventListener('dragstart', (e) => {
+            if (e.target.tagName === 'IMG') {
+                e.preventDefault();
+            }
+        });
+
+        // 🎵 TUS 4 CANCIONES DE SUNO 🎵
+        // ⚠️ IMPORTANTE: Abre cada URL de Suno en tu navegador y copia:
+        // - El TÍTULO de la canción
+        // - El GÉNERO/ESTILO (tags que aparecen)
+        // - La LETRA completa
+        // Luego reemplaza los datos de ejemplo abajo
+        
+        const songs = [
+            {
+                id: 1,
+                title: "TU CANCIÓN 1 - Copia título desde https://suno.com/s/0ztsUgsaWiUVqfJt",
+                genre: "Género 1", // Ejemplo: Rock, Pop, Electronic, etc.
+                year: "2026",
+                cover: "https://user-gen-media-assets.s3.amazonaws.com/seedream_images/a8ba9552-7b8e-4e38-8be2-2956aeed9fd2.png",
+                audio: "cancion-1.mp3", // ⚠️ Descarga el MP3 de Suno y ponlo aquí
+                lyrics: `Copia aquí la letra completa de tu canción 1
+que verás en la página de Suno
+Mantén los saltos de línea tal cual`
+            },
+            {
+                id: 2,
+                title: "TU CANCIÓN 2 - Copia título desde https://suno.com/s/kt8ExlSkdh6W25tY",
+                genre: "Género 2",
+                year: "2026",
+                cover: "https://user-gen-media-assets.s3.amazonaws.com/seedream_images/788b98d8-ed74-4a88-8083-7ed94c63845b.png",
+                audio: "cancion-2.mp3", // ⚠️ Descarga el MP3 de Suno y ponlo aquí
+                lyrics: `Copia aquí la letra completa de tu canción 2
+desde la página de Suno`
+            },
+            {
+                id: 3,
+                title: "TU CANCIÓN 3 - Copia título desde https://suno.com/s/btvytMpd5bECFJvJ",
+                genre: "Género 3",
+                year: "2026",
+                cover: "https://user-gen-media-assets.s3.amazonaws.com/seedream_images/a3c9bd0c-689d-4b6e-a8ff-a5038870d7f7.png",
+                audio: "cancion-3.mp3", // ⚠️ Descarga el MP3 de Suno y ponlo aquí
+                lyrics: `Copia aquí la letra completa de tu canción 3
+desde la página de Suno`
+            },
+            {
+                id: 4,
+                title: "TU CANCIÓN 4 - Copia título desde https://suno.com/s/eNoFCm46r207jZxF",
+                genre: "Género 4",
+                year: "2026",
+                cover: "https://user-gen-media-assets.s3.amazonaws.com/seedream_images/f47c7bb8-1874-4ef8-b15e-4dd29fc90e66.png",
+                audio: "cancion-4.mp3", // ⚠️ Descarga el MP3 de Suno y ponlo aquí
+                lyrics: `Copia aquí la letra completa de tu canción 4
+desde la página de Suno`
+            }
+        ];
+
+        let currentSongIndex = 0;
+        let filteredSongs = [...songs];
+
+        const songsGrid = document.getElementById('songsGrid');
+        const playerSection = document.getElementById('playerSection');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const currentCover = document.getElementById('currentCover');
+        const currentTitle = document.getElementById('currentTitle');
+        const currentGenre = document.getElementById('currentGenre');
+        const currentYear = document.getElementById('currentYear');
+        const currentLyrics = document.getElementById('currentLyrics');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const filterBtns = document.querySelectorAll('.filter-btn');
+
+        function renderSongs(songsToRender) {
+            songsGrid.innerHTML = '';
+            songsToRender.forEach((song, index) => {
+                const songCard = document.createElement('div');
+                songCard.className = 'song-card';
+                songCard.innerHTML = `
+                    <img src="${song.cover}" alt="${song.title}" class="song-cover">
+                    <h3 class="song-title">${song.title}</h3>
+                    <span class="song-genre">${song.genre}</span>
+                    <p class="song-year">${song.year}</p>
+                `;
+                songCard.addEventListener('click', () => playSong(index));
+                songsGrid.appendChild(songCard);
+            });
+        }
+
+        function playSong(index) {
+            currentSongIndex = index;
+            const song = filteredSongs[index];
+            
+            currentCover.src = song.cover;
+            currentTitle.textContent = song.title;
+            currentGenre.textContent = song.genre;
+            currentYear.textContent = song.year;
+            currentLyrics.textContent = song.lyrics;
+            
+            if (song.audio) {
+                audioPlayer.src = song.audio;
+                audioPlayer.play();
+            }
+            
+            playerSection.classList.remove('hidden');
+            
+            // Highlight active card
+            document.querySelectorAll('.song-card').forEach((card, i) => {
+                card.classList.toggle('active', i === index);
+            });
+            
+            // Smooth scroll to player
+            playerSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        prevBtn.addEventListener('click', () => {
+            currentSongIndex = (currentSongIndex - 1 + filteredSongs.length) % filteredSongs.length;
+            playSong(currentSongIndex);
+        });
+
+        nextBtn.addEventListener('click', () => {
+            currentSongIndex = (currentSongIndex + 1) % filteredSongs.length;
+            playSong(currentSongIndex);
+        });
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                const genre = btn.dataset.genre;
+                if (genre === 'all') {
+                    filteredSongs = [...songs];
+                } else {
+                    filteredSongs = songs.filter(song => song.genre === genre);
+                }
+                
+                renderSongs(filteredSongs);
+            });
+        });
+
+        // Auto-play next song when current ends
+        audioPlayer.addEventListener('ended', () => {
+            nextBtn.click();
+        });
+
+        // Initial render
+        renderSongs(songs);
+    </script>
+</body>
+</html>
